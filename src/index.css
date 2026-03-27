@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@theme {
+  --color-on-primary-container: #462400;
+  --color-outline: #78737f;
+  --color-surface: #0f0d16;
+  --color-tertiary-dim: #00d4ec;
+  --color-inverse-on-surface: #57535f;
+  --color-surface-variant: #272431;
+  --color-error-container: #9f0519;
+  --color-tertiary-container: #00e3fd;
+  --color-tertiary-fixed-dim: #00d4ec;
+  --color-on-error: #490006;
+  --color-primary: #ffa44c;
+  --color-secondary-fixed-dim: #cabaff;
+  --color-primary-fixed-dim: #ea8400;
+  --color-error: #ff716c;
+  --color-on-primary-fixed-variant: #532b00;
+  --color-inverse-primary: #8f4f00;
+  --color-surface-container-high: #211e2a;
+  --color-on-surface-variant: #aea9b6;
+  --color-on-secondary: #25006b;
+  --color-on-tertiary-fixed-variant: #005762;
+  --color-tertiary-fixed: #00e3fd;
+  --color-surface-tint: #ffa44c;
+  --color-on-primary-fixed: #1e0c00;
+  --color-outline-variant: #494651;
+  --color-on-primary: #552d00;
+  --color-on-surface: #f5eefc;
+  --color-primary-fixed: #fd9000;
+  --color-primary-container: #fd9000;
+  --color-on-tertiary-container: #004d57;
+  --color-surface-container-highest: #272431;
+  --color-on-secondary-fixed: #3b00a0;
+  --color-inverse-surface: #fdf7ff;
+  --color-background: #0f0d16;
+  --color-secondary: #a68cff;
+  --color-surface-bright: #2d2a39;
+  --color-error-dim: #d7383b;
+  --color-on-tertiary-fixed: #003840;
+  --color-surface-dim: #0f0d16;
+  --color-on-tertiary: #005762;
+  --color-tertiary: #81ecff;
+  --color-surface-container: #1b1823;
+  --color-secondary-dim: #7e51ff;
+  --color-secondary-fixed: #d8caff;
+  --color-primary-dim: #ea8400;
+  --color-surface-container-low: #14121c;
+  --color-on-error-container: #ffa8a3;
+  --color-on-background: #f5eefc;
+  --color-secondary-container: #591adc;
+  --color-on-secondary-container: #e4daff;
+  --color-surface-container-lowest: #000000;
+  --color-on-secondary-fixed-variant: #591bdc;
+
+  --font-headline: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Be Vietnam Pro", sans-serif;
+  --font-label: "Plus Jakarta Sans", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-background font-body min-h-screen selection:bg-primary selection:text-on-primary overflow-x-hidden;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(39, 36, 49, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .btn-primary {
+    @apply relative overflow-hidden bg-gradient-to-b from-primary to-primary-dim text-white font-headline font-bold rounded-full transition-all duration-300;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 8px 20px -4px rgba(253, 144, 0, 0.4), 0 4px 8px -2px rgba(253, 144, 0, 0.3);
+  }
+  .btn-primary:hover {
+    @apply transform -translate-y-0.5;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 12px 25px -4px rgba(253, 144, 0, 0.5), 0 6px 12px -2px rgba(253, 144, 0, 0.4);
+  }
+  .btn-primary:active {
+    @apply transform scale-95 translate-y-0;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 4px 10px -2px rgba(253, 144, 0, 0.4);
+  }
+  .btn-secondary {
+    @apply relative overflow-hidden bg-surface-container-highest text-on-surface font-headline font-bold rounded-full transition-all duration-300;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .btn-secondary:hover {
+    @apply bg-surface-bright transform -translate-y-0.5;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  .btn-secondary:active {
+    @apply transform scale-95 translate-y-0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  .glow-shadow-primary {
+    box-shadow: 0 10px 40px -10px rgba(253, 144, 0, 0.5);
+  }
+  .glow-shadow-secondary {
+    box-shadow: 0 10px 40px -10px rgba(166, 140, 255, 0.4);
+  }
+  .glow-shadow-tertiary {
+    box-shadow: 0 10px 40px -10px rgba(0, 227, 253, 0.4);
+  }
+  .glow-shadow-error {
+    box-shadow: 0 10px 40px -10px rgba(255, 113, 108, 0.4);
+  }
+  .neon-glow {
+    text-shadow: 0 0 10px rgba(255, 164, 76, 0.8), 
+                 0 0 20px rgba(255, 164, 76, 0.4), 
+                 0 0 40px rgba(253, 144, 0, 0.2);
+  }
+  .bg-flare {
+    background: radial-gradient(circle at 20% 30%, rgba(166, 140, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(253, 144, 0, 0.1) 0%, transparent 50%);
+  }
+  .neon-glow-input {
+    box-shadow: 0 0 15px rgba(255, 164, 76, 0.3), inset 0 0 10px rgba(255, 164, 76, 0.1);
+  }
+  .neon-glow-input:focus {
+    box-shadow: 0 0 25px rgba(255, 164, 76, 0.5), inset 0 0 15px rgba(255, 164, 76, 0.2);
+  }
+  .avatar-pulse {
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+  }
+  .bg-mesh {
+    background-color: #0f0d16;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(253, 144, 0, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(166, 140, 255, 0.15) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(89, 26, 220, 0.1) 0px, transparent 80%);
+  }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 0.4; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+@keyframes pulse-custom {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.animate-pulse-custom {
+  animation: pulse-custom 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
