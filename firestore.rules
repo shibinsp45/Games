@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (matches auth.uid)
+    // Fields:
+    //   - name: string (required, max 100 chars)
+    //   - email: string (required, valid email)
+    //   - photoURL: string (optional, valid URL)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // Collection: rooms
+    // Document ID: roomId (4-character string)
+    // Fields:
+    //   - hostId: string (required, immutable)
+    //   - guestId: string (optional)
+    //   - status: string (required, enum: 'waiting', 'playing', 'match', 'game-over')
+    //   - currentQuestion: string (optional)
+    //   - hostAnswer: string (optional)
+    //   - guestAnswer: string (optional)
+    //   - hostReady: boolean (optional)
+    //   - guestReady: boolean (optional)
+    //   - hostScore: number (required, min 0)
+    //   - guestScore: number (required, min 0)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string &&
+        (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['name', 'email', 'createdAt']) &&
+             validStringLength('name', 1, 100) &&
+             isValidEmail(data.email) &&
+             data.createdAt is timestamp &&
+             (!('photoURL' in data) || isValidUrl(data.photoURL));
+    }
+
+    function isValidRoom(data) {
+      return hasRequiredFields(['hostId', 'status', 'createdAt', 'hostScore', 'guestScore']) &&
+             data.hostId is string &&
+             data.status in ['waiting', 'playing', 'match', 'game-over'] &&
+             data.createdAt is timestamp &&
+             data.hostScore is number && data.hostScore >= 0 &&
+             data.guestScore is number && data.guestScore >= 0 &&
+             (!('guestId' in data) || data.guestId is string) &&
+             (!('currentQuestion' in data) || data.currentQuestion is string) &&
+             (!('hostAnswer' in data) || data.hostAnswer is string) &&
+             (!('guestAnswer' in data) || data.guestAnswer is string) &&
+             (!('hostReady' in data) || data.hostReady is bool) &&
+             (!('guestReady' in data) || data.guestReady is bool) &&
+             (!('totalRounds' in data) || data.totalRounds is number) &&
+             (!('code' in data) || data.code is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      
+      // Users can create their own profile
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      
+      // Users can update their own profile, but cannot change createdAt
+      allow update: if isOwner(userId) && 
+                    isValidUser(request.resource.data) &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /rooms/{roomId} {
+      // Anyone authenticated can read a room (needed for joining)
+      allow read: if isAuthenticated();
+
+      // Any authenticated user can create a room, they must be the host
+      allow create: if isAuthenticated() && 
+                    isValidRoom(request.resource.data) &&
+                    request.resource.data.hostId == request.auth.uid;
+
+      // Only the host or guest can update the room
+      allow update: if isAuthenticated() && 
+                    isValidRoom(request.resource.data) &&
+                    (resource.data.hostId == request.auth.uid || 
+                     (resource.data.guestId == request.auth.uid) || 
+                     (!('guestId' in resource.data) && request.resource.data.guestId == request.auth.uid)) &&
+                    request.resource.data.hostId == resource.data.hostId &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+    }
+  }
+}

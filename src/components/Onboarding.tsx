@@ -1,37 +1,104 @@
 import React, { useState } from 'react';
+import { User } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import { handleFirestoreError, OperationType } from '../utils/firebaseErrors';
+import { motion } from 'motion/react';
+import { playHaptic, playSuccess } from '../utils/haptics';
 
-export default function Onboarding({ onNext, onJoin }: { onNext: () => void, onJoin: () => void }) {
+interface Props {
+  onNext: () => void;
+  onJoin: () => void;
+  setRoomId: (id: string) => void;
+  user: User;
+}
+
+export default function Onboarding({ onNext, onJoin, setRoomId, user }: Props) {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreateRoom = async () => {
+    if (isCreating) return;
+    setIsCreating(true);
+    
+    // Generate a random 4-character code
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let newRoomId = '';
+    for (let i = 0; i < 4; i++) {
+      newRoomId += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    try {
+      await setDoc(doc(db, 'rooms', newRoomId), {
+        hostId: user.uid,
+        code: newRoomId,
+        status: 'waiting',
+        hostScore: 0,
+        guestScore: 0,
+        totalRounds: 0,
+        createdAt: serverTimestamp()
+      });
+      playSuccess();
+      setRoomId(newRoomId);
+      onNext();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `rooms/${newRoomId}`);
+      setIsCreating(false);
+    }
+  };
 
   return (
-    <main className="pt-28 pb-32 px-6 max-w-2xl mx-auto flex flex-col gap-12 relative z-10">
-      {/* Background Accents */}
-      <div className="fixed top-[-10%] right-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[120px] -z-10"></div>
-      <div className="fixed bottom-[-5%] left-[-10%] w-80 h-80 bg-secondary/20 rounded-full blur-[100px] -z-10"></div>
+    <motion.main 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.6, ease: "circOut" }}
+      className="pt-24 pb-32 px-6 max-w-2xl mx-auto flex flex-col gap-10 relative z-10"
+    >
+      {/* Background Accents - More Atmospheric */}
+      <div className="fixed top-[-15%] right-[-10%] w-[120%] h-[50%] bg-primary/20 rounded-full blur-[140px] -z-10 animate-pulse"></div>
+      <div className="fixed bottom-[-10%] left-[-10%] w-[120%] h-[50%] bg-secondary/20 rounded-full blur-[140px] -z-10 animate-pulse" style={{ animationDelay: '1.5s' }}></div>
 
-      {/* Hero Section */}
-      <section className="flex flex-col gap-4 text-center">
-        <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight bg-gradient-to-br from-on-background via-on-background to-secondary bg-clip-text text-transparent">
-          Welcome to Lover's Lounge
+      {/* Hero Section - Better Typography */}
+      <section className="flex flex-col gap-3 text-center">
+        <div className="inline-block self-center mb-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold uppercase tracking-[0.4em] text-primary">
+          Step One
+        </div>
+        <h1 className="text-5xl md:text-7xl font-black font-headline tracking-tighter bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent leading-[0.9]">
+          Setting the<br />Scene
         </h1>
-        <p className="text-on-surface-variant text-lg leading-relaxed max-w-md mx-auto">
-          Ready to deepen your connection? Let's personalize your experience.
+        <p className="text-on-surface-variant text-lg font-medium opacity-60 leading-relaxed max-w-[280px] mx-auto">
+          Ready to deepen your connection? Pick a mood for tonight.
         </p>
       </section>
 
-      {/* Name Input */}
-      <section className="flex flex-col gap-4">
-        <label className="font-headline font-bold text-sm uppercase tracking-widest text-primary ml-1">Your Name</label>
-        <div className="relative group">
-          <input 
-            type="text" 
-            placeholder="Enter your name" 
-            className="w-full bg-surface-container-high border border-white/5 rounded-2xl px-6 py-5 text-lg font-medium focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-outline-variant outline-none neon-glow-input"
-          />
-          <div className="absolute inset-y-0 right-6 flex items-center text-outline-variant group-focus-within:text-primary transition-colors">
-            <span className="material-symbols-outlined">person</span>
+      {/* User Profile Display */}
+      <section className="flex flex-col items-center justify-center mt-2 mb-4">
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, type: "spring" }}
+          className="relative"
+        >
+          <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-orange-500 to-pink-500 shadow-[0_0_30px_rgba(255,77,0,0.3)]">
+            <div className="w-full h-full rounded-full overflow-hidden border-4 border-background bg-surface-container-highest flex items-center justify-center">
+              {user?.photoURL ? (
+                <img 
+                  src={user.photoURL} 
+                  alt="User Avatar" 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="material-symbols-outlined text-5xl text-primary">person</span>
+              )}
+            </div>
           </div>
-        </div>
+          <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-background"></div>
+        </motion.div>
+        <h2 className="mt-4 text-2xl font-headline font-bold text-on-background tracking-tight">
+          {user.displayName || 'Welcome!'}
+        </h2>
       </section>
 
       {/* Categories Bento Grid */}
@@ -43,25 +110,30 @@ export default function Onboarding({ onNext, onJoin }: { onNext: () => void, onJ
         <div className="grid grid-cols-2 gap-4">
           <MoodCard 
             emoji="❤️" title="Love" desc="Deep connections" colorClass="border-error-dim glow-shadow-error" bgClass="bg-error-dim/10"
-            selected={selectedMood === 'love'} onClick={() => setSelectedMood('love')}
+            selected={selectedMood === 'love'} onClick={() => { playHaptic(); setSelectedMood('love'); }}
           />
           <MoodCard 
             emoji="📸" title="Memories" desc="Walk down lane" colorClass="border-tertiary-dim glow-shadow-tertiary" bgClass="bg-tertiary-dim/10"
-            selected={selectedMood === 'memories'} onClick={() => setSelectedMood('memories')}
+            selected={selectedMood === 'memories'} onClick={() => { playHaptic(); setSelectedMood('memories'); }}
           />
           <MoodCard 
             emoji="🥳" title="Fun" desc="Light & playful" colorClass="border-primary glow-shadow-primary" bgClass="bg-primary/10"
-            selected={selectedMood === 'fun'} onClick={() => setSelectedMood('fun')}
+            selected={selectedMood === 'fun'} onClick={() => { playHaptic(); setSelectedMood('fun'); }}
           />
           <MoodCard 
             emoji="🌶️" title="Spicy" desc="Heating things up" colorClass="border-secondary glow-shadow-secondary" bgClass="bg-secondary/10"
-            selected={selectedMood === 'spicy'} onClick={() => setSelectedMood('spicy')}
+            selected={selectedMood === 'spicy'} onClick={() => { playHaptic(); setSelectedMood('spicy'); }}
           />
         </div>
       </section>
 
       {/* Decorative Illustration Element */}
-      <section className="w-full h-48 rounded-2xl overflow-hidden relative shadow-2xl cursor-pointer hover:opacity-90 transition-opacity border border-white/10" onClick={onJoin}>
+      <motion.section 
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className="w-full h-48 rounded-2xl overflow-hidden relative shadow-2xl cursor-pointer hover:opacity-90 transition-opacity border border-white/10" 
+        onClick={() => { playHaptic(); onJoin(); }}
+      >
         <img 
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzRlxGdHk4tGtxlfmaG3CwbMcHMFHf2XICuDSCAilaNXRbdTAFPZrfPWXQTyiWhehuJmvbDx_le3_JQje-LPJV5nOtMzCqcfrWcMSyk3dNJkQB2Ezpz1Eni_Y7gGHuXkrLdqgwGu7iM3DSGOCGLSguoYlIgLkTp7DfQsk3XlkQMJBr4bQcBrO1fmX3fgi8r3ir_Ciu4eCRSCMzyBwYkY69Cw9YVNwRXrGB6uEbiouWkLD7SCgI8qa12EYHZo6pcVDaHlfoiXIW7A3E" 
           alt="Couples Choice" 
@@ -73,24 +145,34 @@ export default function Onboarding({ onNext, onJoin }: { onNext: () => void, onJ
           <p className="text-lg font-bold">Trusted by 10,000+ happy pairs</p>
           <p className="text-sm text-on-surface-variant mt-1">Tap here to Join a Room instead</p>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Fixed Bottom CTA */}
-      <div className="fixed bottom-0 left-0 w-full px-8 pb-10 pt-4 bg-gradient-to-t from-background via-background/95 to-transparent z-50">
-        <button onClick={onNext} className="btn-primary w-full py-5 text-xl flex items-center justify-center gap-3">
-          Get Started
-          <span className="material-symbols-outlined font-black">arrow_forward</span>
-        </button>
+      {/* Fixed Bottom CTA - Premium Shadow */}
+      <div className="fixed bottom-0 left-0 w-full px-8 pb-10 pt-12 bg-gradient-to-t from-background via-background to-transparent z-50">
+        <motion.button 
+          whileHover={{ scale: 1.02, translateY: -4 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleCreateRoom} 
+          disabled={isCreating} 
+          className={`btn-primary w-full py-6 text-2xl flex items-center justify-center gap-4 shadow-[0_25px_60px_-10px_rgba(253,144,0,0.5)] ${isCreating ? 'opacity-50' : ''}`}
+        >
+          <span className="font-headline font-black">
+            {isCreating ? 'Crafting Space...' : 'Create Space'}
+          </span>
+          {!isCreating && <span className="material-symbols-outlined text-3xl">add_circle</span>}
+        </motion.button>
       </div>
-    </main>
+    </motion.main>
   );
 }
 
 function MoodCard({ emoji, title, desc, colorClass, bgClass, selected, onClick }: any) {
   return (
-    <div 
+    <motion.div 
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={{ scale: 0.95 }}
       onClick={onClick}
-      className={`glass-card rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden group cursor-pointer transition-all duration-300 border-b-4 ${colorClass} ${selected ? 'bg-surface-variant/80 scale-[0.98] shadow-inner' : 'hover:bg-surface-variant/60 hover:-translate-y-1 active:scale-[0.98]'}`}
+      className={`glass-card rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden group cursor-pointer transition-all duration-300 border-b-4 ${colorClass} ${selected ? 'bg-surface-variant/80 shadow-inner' : 'hover:bg-surface-variant/60'}`}
     >
       <div className="text-5xl mb-2 filter drop-shadow-md group-hover:scale-110 transition-transform">{emoji}</div>
       <div className="flex flex-col">
@@ -98,6 +180,6 @@ function MoodCard({ emoji, title, desc, colorClass, bgClass, selected, onClick }
         <span className="text-xs text-on-surface-variant font-medium">{desc}</span>
       </div>
       <div className={`absolute -right-4 -top-4 w-16 h-16 rounded-full blur-2xl ${bgClass}`}></div>
-    </div>
+    </motion.div>
   );
 }
